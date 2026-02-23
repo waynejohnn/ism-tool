@@ -11,8 +11,7 @@ trigger:
     include:
     - backend/**
     - frontend/**
-    - docker-compose.yml
-    - Dockerfile
+    - deploy/**
 
 pr:
   branches:
@@ -185,9 +184,9 @@ stages:
               azureSubscription: '$(AZURE_SUBSCRIPTION_ID)'
               scriptType: bash
               scriptLocation: scriptPath
-              scriptPath: '$(Pipeline.Workspace)/s/deploy-dev-aca.sh'
-              arguments: '--env-file $(Pipeline.Workspace)/s/.env.dev.aca.local --skip-resources'
-              workingDirectory: '$(Pipeline.Workspace)/s'
+              scriptPath: '$(Build.SourcesDirectory)/deploy/dev/deploy-dev-aca.sh'
+              arguments: '--env-file $(Build.SourcesDirectory)/.env.dev.aca.local --skip-resources'
+              workingDirectory: '$(Build.SourcesDirectory)'
             env:
               SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 
@@ -213,9 +212,9 @@ stages:
               azureSubscription: '$(AZURE_SUBSCRIPTION_ID)'
               scriptType: bash
               scriptLocation: scriptPath
-              scriptPath: '$(Pipeline.Workspace)/s/deploy-staging-aca.sh'
-              arguments: '--env-file $(Pipeline.Workspace)/s/.env.staging.aca.local --skip-resources'
-              workingDirectory: '$(Pipeline.Workspace)/s'
+              scriptPath: '$(Build.SourcesDirectory)/deploy/tst/deploy-tst-aca.sh'
+              arguments: '--env-file $(Build.SourcesDirectory)/.env.tst.aca.local --skip-resources'
+              workingDirectory: '$(Build.SourcesDirectory)'
             env:
               SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 
@@ -249,108 +248,8 @@ stages:
               azureSubscription: '$(AZURE_SUBSCRIPTION_ID)'
               scriptType: bash
               scriptLocation: scriptPath
-              scriptPath: '$(Pipeline.Workspace)/s/deploy-prod-aca.sh'
-              arguments: '--env-file $(Pipeline.Workspace)/s/.env.prod.aca.local --skip-resources'
-              workingDirectory: '$(Pipeline.Workspace)/s'
+              scriptPath: '$(Build.SourcesDirectory)/deploy/prd/deploy-prd-aca.sh'
+              arguments: '--env-file $(Build.SourcesDirectory)/.env.prd.aca.local --skip-resources'
+              workingDirectory: '$(Build.SourcesDirectory)'
             env:
               SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-
-                docker build -t $(backendImage) ./backend
-                docker push $(backendImage)
-
-                docker build -t $(frontendImage) ./frontend
-                docker push $(frontendImage)
-
-  - stage: Deploy
-    displayName: Deploy to Azure Container Apps
-    dependsOn: Build
-    jobs:
-      - job: Deploy
-        pool:
-          vmImage: 'ubuntu-latest'
-        steps:
-          - task: AzureCLI@2
-            displayName: 'Provision and Deploy'
-            inputs:
-              azureSubscription: '$(azureServiceConnection)'
-              scriptType: 'bash'
-              scriptLocation: 'inlineScript'
-              inlineScript: |
-                set -e
-
-                # Resource group
-                az group create --name $(resourceGroup) --location $(location)
-
-                # Storage account and file share
-                az storage account create --name $(storageAccount) --resource-group $(resourceGroup) --location $(location) --sku Standard_LRS
-                az storage share create --name $(fileShare) --account-name $(storageAccount)
-
-                # Container Apps environment
-                az containerapp env create --name $(containerAppEnv) --resource-group $(resourceGroup) --location $(location)
-
-                # Get ACR credentials
-                ACR_PASS=$(az acr credential show --name $(acrName) --query passwords[0].value -o tsv)
-
-                # Backend app
-                if az containerapp show --name $(backendAppName) --resource-group $(resourceGroup) > /dev/null 2>&1; then
-                  az containerapp update \
-                    --name $(backendAppName) \
-                    --resource-group $(resourceGroup) \
-                    --image $(backendImage) \
-                    --set-env-vars \
-                      JWT_SECRET=$(JWT_SECRET) \
-                      FLASK_ENV=$(flaskEnv) \
-                      DATABASE_URL=$(databaseUrl)
-                else
-                  az containerapp create \
-                    --name $(backendAppName) \
-                    --resource-group $(resourceGroup) \
-                    --environment $(containerAppEnv) \
-                    --image $(backendImage) \
-                    --ingress external \
-                    --target-port 5000 \
-                    --min-replicas 1 \
-                    --max-replicas 3 \
-                    --cpu 0.5 \
-                    --memory 1Gi \
-                    --environment-variables \
-                      JWT_SECRET=$(JWT_SECRET) \
-                      FLASK_ENV=$(flaskEnv) \
-                      DATABASE_URL=$(databaseUrl) \
-                    --storage-mounts \
-                      volumeName=database \
-                      storageAccountName=$(storageAccount) \
-                      storageName=$(fileShare) \
-                      storageType=AzureFiles \
-                      mountPath=/mnt/appdata \
-                    --registry-username $(acrName) \
-                    --registry-password $ACR_PASS
-                fi
-
-                # Get backend URL
-                BACKEND_URL=$(az containerapp show --name $(backendAppName) --resource-group $(resourceGroup) --query "properties.configuration.ingress.fqdn" -o tsv)
-
-                # Frontend app
-                if az containerapp show --name $(frontendAppName) --resource-group $(resourceGroup) > /dev/null 2>&1; then
-                  az containerapp update \
-                    --name $(frontendAppName) \
-                    --resource-group $(resourceGroup) \
-                    --image $(frontendImage) \
-                    --set-env-vars VITE_API_URL=https://$BACKEND_URL
-                else
-                  az containerapp create \
-                    --name $(frontendAppName) \
-                    --resource-group $(resourceGroup) \
-                    --environment $(containerAppEnv) \
-                    --image $(frontendImage) \
-                    --ingress external \
-                    --target-port 3000 \
-                    --min-replicas 1 \
-                    --max-replicas 3 \
-                    --cpu 0.5 \
-                    --memory 1Gi \
-                    --environment-variables \
-                      VITE_API_URL=https://$BACKEND_URL \
-                    --registry-username $(acrName) \
-                    --registry-password $ACR_PASS
-                fi
