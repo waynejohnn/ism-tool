@@ -97,7 +97,7 @@ stages:
         targetType: 'inline'
         script: |
           cd frontend
-          npm ci
+          npm install
     
     - task: Bash@3
       displayName: 'Lint Frontend'
