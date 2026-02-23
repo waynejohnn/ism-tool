@@ -45,17 +45,23 @@ print_error() {
 # Load environment file
 load_env_file() {
     local env_file="$1"
+    local sanitized_env
     
     if [ ! -f "$env_file" ]; then
         print_error "Environment file not found: $env_file"
     fi
     
     print_step "Loading environment from $env_file"
-    
-    # Source the env file, handling comments and quotes
+
+    # Normalize CRLF line endings and source env entries, handling comments and quotes
+    sanitized_env="$(mktemp)"
+    grep -v '^#' "$env_file" | grep -v '^$' | sed "s/'//g" | sed 's/"//g' | sed 's/\r$//' > "$sanitized_env"
+
     set -a
-    source <(grep -v '^#' "$env_file" | grep -v '^$' | sed "s/'//g" | sed 's/"//g')
+    source "$sanitized_env"
     set +a
+
+    rm -f "$sanitized_env"
     
     print_success "Environment loaded"
 }
