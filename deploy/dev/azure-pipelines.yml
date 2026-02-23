@@ -35,8 +35,8 @@ variables:
   tag: '$(Build.BuildId)'
   vmImageName: 'ubuntu-latest'
   envFileDevSecure: '.env.dev.aca.local'
-  envFileTstSecure: '.env.tst.aca.local'
-  envFilePrdSecure: '.env.prd.aca.local'
+  envFileTstSecure: '.env.dev.aca.local'
+  envFilePrdSecure: '.env.dev.aca.local'
 
 stages:
 - stage: Build
