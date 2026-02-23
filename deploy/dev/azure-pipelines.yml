@@ -24,7 +24,10 @@ pool:
   vmImage: 'ubuntu-latest'  # Linux agent
 
 variables:
-  dockerRegistryServiceConnection: 'UseCase-ACR'
+  dockerRegistryServiceConnection: 'da_sc_cr_dev_conn'
+  azureServiceConnectionDev: 'da_sc_apps_dev_connection'
+  azureServiceConnectionTst: 'da_sc_apps_tst_connection'
+  azureServiceConnectionPrd: 'da_sc_apps_prd_connection'
   imageRepository: 'usecasescoringapp'
   containerRegistry: '$(REGISTRY_URL)'
   dockerfileFrontendPath: '$(Build.SourcesDirectory)/frontend/Dockerfile'
@@ -191,7 +194,7 @@ stages:
           - task: AzureCLI@2
             displayName: 'Deploy to Azure Container Apps (Dev)'
             inputs:
-              azureSubscription: '$(AZURE_SUBSCRIPTION_ID)'
+              azureSubscription: '$(azureServiceConnectionDev)'
               scriptType: bash
               scriptLocation: scriptPath
               scriptPath: '$(Build.SourcesDirectory)/deploy/dev/deploy-dev-aca.sh'
@@ -225,7 +228,7 @@ stages:
           - task: AzureCLI@2
             displayName: 'Deploy to Azure Container Apps (Testing)'
             inputs:
-              azureSubscription: '$(AZURE_SUBSCRIPTION_ID)'
+              azureSubscription: '$(azureServiceConnectionTst)'
               scriptType: bash
               scriptLocation: scriptPath
               scriptPath: '$(Build.SourcesDirectory)/deploy/tst/deploy-tst-aca.sh'
@@ -267,7 +270,7 @@ stages:
           - task: AzureCLI@2
             displayName: 'Deploy to Azure Container Apps (Production)'
             inputs:
-              azureSubscription: '$(AZURE_SUBSCRIPTION_ID)'
+              azureSubscription: '$(azureServiceConnectionPrd)'
               scriptType: bash
               scriptLocation: scriptPath
               scriptPath: '$(Build.SourcesDirectory)/deploy/prd/deploy-prd-aca.sh'
