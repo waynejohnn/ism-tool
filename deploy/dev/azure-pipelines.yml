@@ -4,9 +4,11 @@
 trigger:
   branches:
     include:
-    - main
     - develop
     - feature/*
+    - deploy/dev
+    - deploy/tst
+    - deploy/prd
   paths:
     include:
     - backend/**
@@ -17,7 +19,6 @@ trigger:
 pr:
   branches:
     include:
-    - main
     - develop
 
 pool:
@@ -166,7 +167,7 @@ stages:
 - stage: DeployDev
   displayName: Deploy to Dev (ACA)
   dependsOn: BuildAndPush
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/deploy/dev'))
   jobs:
   - deployment: DeployDev
     displayName: Deploy to Dev
@@ -194,7 +195,7 @@ stages:
 - stage: DeployStaging
   displayName: Deploy to Staging (ACA)
   dependsOn: BuildAndPush
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/deploy/tst'))
   jobs:
   - deployment: DeployStaging
     displayName: Deploy to Staging
@@ -222,7 +223,7 @@ stages:
 - stage: DeployProduction
   displayName: Deploy to Production (ACA)
   dependsOn: BuildAndPush
-  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/deploy/prd'))
   jobs:
   - deployment: DeployProduction
     displayName: Deploy to Production
