@@ -203,7 +203,7 @@ stages:
               scriptType: bash
               scriptLocation: scriptPath
               scriptPath: '$(Build.SourcesDirectory)/deploy/dev/deploy-dev-aca.sh'
-              arguments: '--env-file $(DownloadDevEnv.secureFilePath) --skip-resources'
+              arguments: '--env-file $(DownloadDevEnv.secureFilePath) --skip-resources --skip-build'
               workingDirectory: '$(Build.SourcesDirectory)'
             env:
               SYSTEM_ACCESSTOKEN: $(System.AccessToken)

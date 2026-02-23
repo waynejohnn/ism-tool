@@ -42,6 +42,10 @@ print_error() {
     exit 1
 }
 
+print_warning() {
+    echo -e "${YELLOW}⚠ $1${NC}"
+}
+
 # Load environment file
 load_env_file() {
     local env_file="$1"
@@ -252,17 +256,31 @@ fi
 print_header "Step 4: Retrieving Registry Credentials"
 
 print_step "Getting registry username and password..."
-registry_username=$(az acr credential show \
-    --resource-group "$RESOURCE_GROUP" \
-    --name "$REGISTRY_NAME" \
-    --query username -o tsv)
+registry_username=""
+registry_password=""
+registry_auth_args=()
 
-registry_password=$(az acr credential show \
-    --resource-group "$RESOURCE_GROUP" \
-    --name "$REGISTRY_NAME" \
-    --query "passwords[0].value" -o tsv)
+if az acr credential show --resource-group "$RESOURCE_GROUP" --name "$REGISTRY_NAME" --output none 2>/dev/null; then
+    registry_username=$(az acr credential show \
+        --resource-group "$RESOURCE_GROUP" \
+        --name "$REGISTRY_NAME" \
+        --query username -o tsv)
 
-print_success "Registry credentials retrieved"
+    registry_password=$(az acr credential show \
+        --resource-group "$RESOURCE_GROUP" \
+        --name "$REGISTRY_NAME" \
+        --query "passwords[0].value" -o tsv)
+
+    registry_auth_args=(
+        --registry-login-server "$REGISTRY_URL"
+        --registry-username "$registry_username"
+        --registry-password "$registry_password"
+    )
+
+    print_success "Registry credentials retrieved"
+else
+    print_warning "Could not retrieve ACR credentials for $REGISTRY_NAME in $RESOURCE_GROUP. Will attempt update-only deployment for existing apps."
+fi
 
 # ============================================
 # STEP 5: Deploy Backend
@@ -272,40 +290,45 @@ print_header "Step 5: Deploying Backend Container App"
 
 print_step "Creating/updating backend app: $BACKEND_APP_NAME"
 
-az containerapp create \
-    --name "$BACKEND_APP_NAME" \
-    --resource-group "$RESOURCE_GROUP" \
-    --environment "$CONTAINER_APP_ENVIRONMENT" \
-    --image "$BACKEND_IMAGE_FULL" \
-    --registry-login-server "$REGISTRY_URL" \
-    --registry-username "$registry_username" \
-    --registry-password "$registry_password" \
-    --ingress external \
-    --target-port "$BACKEND_INGRESS_TARGET_PORT" \
-    --cpu "$BACKEND_CPU" \
-    --memory "$BACKEND_MEMORY" \
-    --min-replicas "$BACKEND_MIN_REPLICAS" \
-    --max-replicas "$BACKEND_MAX_REPLICAS" \
-    --env-vars \
-        FLASK_ENV="$FLASK_ENV" \
-        JWT_SECRET="$JWT_SECRET" \
-        DATABASE_URL="$DATABASE_URL" \
-        PORT="$PORT" \
-        CORS_ORIGINS="$CORS_ORIGINS" \
-        GUNICORN_WORKERS="$GUNICORN_WORKERS" \
-    --output none 2>/dev/null || \
-az containerapp update \
-    --name "$BACKEND_APP_NAME" \
-    --resource-group "$RESOURCE_GROUP" \
-    --image "$BACKEND_IMAGE_FULL" \
-    --set-env-vars \
-        FLASK_ENV="$FLASK_ENV" \
-        JWT_SECRET="$JWT_SECRET" \
-        DATABASE_URL="$DATABASE_URL" \
-        PORT="$PORT" \
-        CORS_ORIGINS="$CORS_ORIGINS" \
-        GUNICORN_WORKERS="$GUNICORN_WORKERS" \
-    --output none
+if az containerapp show --name "$BACKEND_APP_NAME" --resource-group "$RESOURCE_GROUP" --output none 2>/dev/null; then
+    az containerapp update \
+        --name "$BACKEND_APP_NAME" \
+        --resource-group "$RESOURCE_GROUP" \
+        --image "$BACKEND_IMAGE_FULL" \
+        --set-env-vars \
+            FLASK_ENV="$FLASK_ENV" \
+            JWT_SECRET="$JWT_SECRET" \
+            DATABASE_URL="$DATABASE_URL" \
+            PORT="$PORT" \
+            CORS_ORIGINS="$CORS_ORIGINS" \
+            GUNICORN_WORKERS="$GUNICORN_WORKERS" \
+        --output none
+else
+    if [ ${#registry_auth_args[@]} -eq 0 ]; then
+        print_error "Backend app does not exist and registry credentials are unavailable. Cannot create app."
+    fi
+
+    az containerapp create \
+        --name "$BACKEND_APP_NAME" \
+        --resource-group "$RESOURCE_GROUP" \
+        --environment "$CONTAINER_APP_ENVIRONMENT" \
+        --image "$BACKEND_IMAGE_FULL" \
+        "${registry_auth_args[@]}" \
+        --ingress external \
+        --target-port "$BACKEND_INGRESS_TARGET_PORT" \
+        --cpu "$BACKEND_CPU" \
+        --memory "$BACKEND_MEMORY" \
+        --min-replicas "$BACKEND_MIN_REPLICAS" \
+        --max-replicas "$BACKEND_MAX_REPLICAS" \
+        --env-vars \
+            FLASK_ENV="$FLASK_ENV" \
+            JWT_SECRET="$JWT_SECRET" \
+            DATABASE_URL="$DATABASE_URL" \
+            PORT="$PORT" \
+            CORS_ORIGINS="$CORS_ORIGINS" \
+            GUNICORN_WORKERS="$GUNICORN_WORKERS" \
+        --output none
+fi
 
 print_success "Backend deployed successfully"
 
@@ -330,34 +353,39 @@ print_header "Step 7: Deploying Frontend Container App"
 
 print_step "Creating/updating frontend app: $FRONTEND_APP_NAME"
 
-az containerapp create \
-    --name "$FRONTEND_APP_NAME" \
-    --resource-group "$RESOURCE_GROUP" \
-    --environment "$CONTAINER_APP_ENVIRONMENT" \
-    --image "$FRONTEND_IMAGE_FULL" \
-    --registry-login-server "$REGISTRY_URL" \
-    --registry-username "$registry_username" \
-    --registry-password "$registry_password" \
-    --ingress external \
-    --target-port "$FRONTEND_INGRESS_TARGET_PORT" \
-    --cpu "$FRONTEND_CPU" \
-    --memory "$FRONTEND_MEMORY" \
-    --min-replicas "$FRONTEND_MIN_REPLICAS" \
-    --max-replicas "$FRONTEND_MAX_REPLICAS" \
-    --env-vars \
-        VITE_API_URL="$backend_url" \
-        VITE_APP_TITLE="$VITE_APP_TITLE" \
-        VITE_ENVIRONMENT="$VITE_ENVIRONMENT" \
-    --output none 2>/dev/null || \
-az containerapp update \
-    --name "$FRONTEND_APP_NAME" \
-    --resource-group "$RESOURCE_GROUP" \
-    --image "$FRONTEND_IMAGE_FULL" \
-    --set-env-vars \
-        VITE_API_URL="$backend_url" \
-        VITE_APP_TITLE="$VITE_APP_TITLE" \
-        VITE_ENVIRONMENT="$VITE_ENVIRONMENT" \
-    --output none
+if az containerapp show --name "$FRONTEND_APP_NAME" --resource-group "$RESOURCE_GROUP" --output none 2>/dev/null; then
+    az containerapp update \
+        --name "$FRONTEND_APP_NAME" \
+        --resource-group "$RESOURCE_GROUP" \
+        --image "$FRONTEND_IMAGE_FULL" \
+        --set-env-vars \
+            VITE_API_URL="$backend_url" \
+            VITE_APP_TITLE="$VITE_APP_TITLE" \
+            VITE_ENVIRONMENT="$VITE_ENVIRONMENT" \
+        --output none
+else
+    if [ ${#registry_auth_args[@]} -eq 0 ]; then
+        print_error "Frontend app does not exist and registry credentials are unavailable. Cannot create app."
+    fi
+
+    az containerapp create \
+        --name "$FRONTEND_APP_NAME" \
+        --resource-group "$RESOURCE_GROUP" \
+        --environment "$CONTAINER_APP_ENVIRONMENT" \
+        --image "$FRONTEND_IMAGE_FULL" \
+        "${registry_auth_args[@]}" \
+        --ingress external \
+        --target-port "$FRONTEND_INGRESS_TARGET_PORT" \
+        --cpu "$FRONTEND_CPU" \
+        --memory "$FRONTEND_MEMORY" \
+        --min-replicas "$FRONTEND_MIN_REPLICAS" \
+        --max-replicas "$FRONTEND_MAX_REPLICAS" \
+        --env-vars \
+            VITE_API_URL="$backend_url" \
+            VITE_APP_TITLE="$VITE_APP_TITLE" \
+            VITE_ENVIRONMENT="$VITE_ENVIRONMENT" \
+        --output none
+fi
 
 print_success "Frontend deployed successfully"
 
