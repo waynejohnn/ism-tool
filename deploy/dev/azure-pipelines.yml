@@ -200,16 +200,16 @@ stages:
             env:
               SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 
-- stage: DeployStaging
-  displayName: Deploy to Staging (ACA)
+- stage: DeployTesting
+  displayName: Deploy to Testing (ACA)
   dependsOn: BuildAndPush
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/deploy/tst'))
   jobs:
-  - deployment: DeployStaging
-    displayName: Deploy to Staging
+  - deployment: DeployTesting
+    displayName: Deploy to Testing
     pool:
       vmImage: $(vmImageName)
-    environment: 'Staging'
+    environment: 'Testing'
     strategy:
       runOnce:
         deploy:
@@ -223,7 +223,7 @@ stages:
               secureFile: '$(envFileTstSecure)'
           
           - task: AzureCLI@2
-            displayName: 'Deploy to Azure Container Apps (Staging)'
+            displayName: 'Deploy to Azure Container Apps (Testing)'
             inputs:
               azureSubscription: '$(AZURE_SUBSCRIPTION_ID)'
               scriptType: bash
