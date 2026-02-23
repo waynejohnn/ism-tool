@@ -30,6 +30,9 @@ variables:
   dockerfileBackendPath: '$(Build.SourcesDirectory)/backend/Dockerfile'
   tag: '$(Build.BuildId)'
   vmImageName: 'ubuntu-latest'
+  envFileDevSecure: '.env.dev.aca.local'
+  envFileTstSecure: '.env.tst.aca.local'
+  envFilePrdSecure: '.env.prd.aca.local'
 
 stages:
 - stage: Build
@@ -177,6 +180,12 @@ stages:
         deploy:
           steps:
           - checkout: self
+
+          - task: DownloadSecureFile@1
+            name: DownloadDevEnv
+            displayName: 'Download Dev Environment File'
+            inputs:
+              secureFile: '$(envFileDevSecure)'
           
           - task: AzureCLI@2
             displayName: 'Deploy to Azure Container Apps (Dev)'
@@ -185,7 +194,7 @@ stages:
               scriptType: bash
               scriptLocation: scriptPath
               scriptPath: '$(Build.SourcesDirectory)/deploy/dev/deploy-dev-aca.sh'
-              arguments: '--env-file $(Build.SourcesDirectory)/.env.dev.aca.local --skip-resources'
+              arguments: '--env-file $(DownloadDevEnv.secureFilePath) --skip-resources'
               workingDirectory: '$(Build.SourcesDirectory)'
             env:
               SYSTEM_ACCESSTOKEN: $(System.AccessToken)
@@ -205,6 +214,12 @@ stages:
         deploy:
           steps:
           - checkout: self
+
+          - task: DownloadSecureFile@1
+            name: DownloadTstEnv
+            displayName: 'Download Test Environment File'
+            inputs:
+              secureFile: '$(envFileTstSecure)'
           
           - task: AzureCLI@2
             displayName: 'Deploy to Azure Container Apps (Staging)'
@@ -213,7 +228,7 @@ stages:
               scriptType: bash
               scriptLocation: scriptPath
               scriptPath: '$(Build.SourcesDirectory)/deploy/tst/deploy-tst-aca.sh'
-              arguments: '--env-file $(Build.SourcesDirectory)/.env.tst.aca.local --skip-resources'
+              arguments: '--env-file $(DownloadTstEnv.secureFilePath) --skip-resources'
               workingDirectory: '$(Build.SourcesDirectory)'
             env:
               SYSTEM_ACCESSTOKEN: $(System.AccessToken)
@@ -233,6 +248,12 @@ stages:
         deploy:
           steps:
           - checkout: self
+
+          - task: DownloadSecureFile@1
+            name: DownloadPrdEnv
+            displayName: 'Download Production Environment File'
+            inputs:
+              secureFile: '$(envFilePrdSecure)'
           
           - task: Bash@3
             displayName: 'Manual Approval Required'
@@ -249,7 +270,7 @@ stages:
               scriptType: bash
               scriptLocation: scriptPath
               scriptPath: '$(Build.SourcesDirectory)/deploy/prd/deploy-prd-aca.sh'
-              arguments: '--env-file $(Build.SourcesDirectory)/.env.prd.aca.local --skip-resources'
+              arguments: '--env-file $(DownloadPrdEnv.secureFilePath) --skip-resources'
               workingDirectory: '$(Build.SourcesDirectory)'
             env:
               SYSTEM_ACCESSTOKEN: $(System.AccessToken)
