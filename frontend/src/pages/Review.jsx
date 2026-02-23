@@ -216,6 +216,7 @@ const ISM_ITEMS = [
 export default function Review() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token') || '';
+  const encodedToken = encodeURIComponent(token);
   const [useCase, setUseCase] = useState(null);
   const [criteria, setCriteria] = useState(ISM_ITEMS);
   const [scores, setScores] = useState({});
@@ -237,17 +238,33 @@ export default function Review() {
   const [backendTotals, setBackendTotals] = useState(null);
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+
+  const postWithRetry = async (path, body, retries = 2) => {
+    let lastError;
+    for (let attempt = 0; attempt <= retries; attempt += 1) {
+      try {
+        return await apiPost(path, body);
+      } catch (err) {
+        lastError = err;
+        if (attempt < retries) {
+          await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+        }
+      }
+    }
+    throw lastError;
+  };
 
   useEffect(() => {
     if (!token) return;
     const load = async () => {
       setLoading(true);
       try {
-        const response = await apiGet(`/review?token=${token}`);
+        const response = await apiGet(`/review?token=${encodedToken}`);
         let savedScores = [];
         try {
-          savedScores = await apiGet(`/scores?token=${token}`);
+          savedScores = await apiGet(`/scores?token=${encodedToken}`);
         } catch (scoreErr) {
           console.error('Error loading saved scores:', scoreErr);
           savedScores = [];
@@ -302,7 +319,7 @@ export default function Review() {
       }
     };
     load();
-  }, [token]);
+  }, [encodedToken, token]);
 
   const groupedCriteria = useMemo(() => {
     const result = criteria.reduce((acc, criterion) => {
@@ -458,7 +475,8 @@ export default function Review() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!token) return;
+    if (!token || saving) return;
+    setSaving(true);
     setStatus('Saving review...');
     try {
       const naCount = Object.values(dimensionNA).filter(Boolean).length;
@@ -483,7 +501,7 @@ export default function Review() {
         return;
       }
 
-      await apiPost(`/review/na?token=${token}`, {
+      await postWithRetry(`/review/na?token=${encodedToken}`, {
         naValue: dimensionNA.Value,
         naFeasibility: dimensionNA.Feasibility,
         naOrgCapability: dimensionNA['Organizational Capability'],
@@ -501,23 +519,26 @@ export default function Review() {
         const dimensionKey = dimensionMap[criterion.dimension] || criterion.dimension || 'General';
         const dimensionExcluded = Boolean(dimensionNA[dimensionKey]);
         const isNA = dimensionExcluded || Boolean(itemNA[criterion.criterionId]);
-        await apiPost(`/scores?token=${token}`, {
+        const scoreValue = Number(scores[criterion.criterionId] ?? 2.0);
+        await postWithRetry(`/scores?token=${encodedToken}`, {
           criterionId: criterion.criterionId,
-          rawScore: isNA ? null : Number(scores[criterion.criterionId] ?? 0),
+          rawScore: isNA ? null : scoreValue,
           isNA
         });
       }
       
       // Trigger backend computation of dimension totals
       if (useCase?.useCaseId) {
-        const totals = await apiPost(`/compute/${useCase.useCaseId}`, {});
+        const totals = await postWithRetry(`/compute/${useCase.useCaseId}`, {});
         console.log('Updated backend totals after compute:', totals);
         setBackendTotals(totals);
       }
       setStatus('Review saved and totals updated');
     } catch (err) {
       console.error('Error saving review:', err);
-      setStatus('Unable to save review');
+      setStatus(`Unable to save review: ${err?.message || 'Unknown error'}`);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -905,7 +926,7 @@ export default function Review() {
         </section>
 
         <div className="form-actions">
-          <button type="submit" className="btn btn--primary">Save Review</button>
+          <button type="submit" className="btn btn--primary" disabled={saving}>{saving ? 'Saving...' : 'Save Review'}</button>
           {status && <span className="status-message">{status}</span>}
         </div>
       </form>

@@ -16,59 +16,66 @@ function resolveApiBase() {
 
 const API_BASE = resolveApiBase();
 
-export async function apiGet(path) {
-  const response = await fetch(`${API_BASE}${path}`);
-  if (!response.ok) {
-    throw new Error('Request failed');
+async function parseError(response) {
+  let details = '';
+  try {
+    const text = await response.text();
+    if (text) {
+      try {
+        const parsed = JSON.parse(text);
+        details = parsed?.error || text;
+      } catch {
+        details = text;
+      }
+    }
+  } catch {
+    details = '';
   }
-  return response.json();
+
+  return `Request failed (${response.status}${details ? `): ${details}` : ')'}`;
 }
 
-export async function apiPost(path, body) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
+async function requestJson(path, options = {}) {
+  const response = await fetch(`${API_BASE}${path}`, options);
   if (!response.ok) {
-    throw new Error('Request failed');
-  }
-  return response.json();
-}
-
-export async function apiPut(path, body) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  if (!response.ok) {
-    throw new Error('Request failed');
-  }
-  return response.json();
-}
-
-export async function apiPatch(path, body) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  if (!response.ok) {
-    throw new Error('Request failed');
-  }
-  return response.json();
-}
-
-export async function apiDelete(path) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    method: 'DELETE'
-  });
-  if (!response.ok) {
-    throw new Error('Request failed');
+    throw new Error(await parseError(response));
   }
   if (response.status === 204) {
     return null;
   }
   return response.json();
+}
+
+export async function apiGet(path) {
+  return requestJson(path);
+}
+
+export async function apiPost(path, body) {
+  return requestJson(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+}
+
+export async function apiPut(path, body) {
+  return requestJson(path, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+}
+
+export async function apiPatch(path, body) {
+  return requestJson(path, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+}
+
+export async function apiDelete(path) {
+  return requestJson(path, {
+    method: 'DELETE'
+  });
 }
