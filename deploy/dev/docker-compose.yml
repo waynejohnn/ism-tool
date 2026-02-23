@@ -1,0 +1,21 @@
+services:
+  frontend:
+    build:
+      context: ../../frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:5001
+
+  backend:
+    build:
+      context: ../../backend
+    ports:
+      - "5001:5000"
+    environment:
+      - FLASK_ENV=production
+      - JWT_SECRET=dev-secret
+      - DATABASE_URL=sqlite:///./data/app.db
+      - PORT=5000
+    volumes:
+      - ./backend/data:/app/data

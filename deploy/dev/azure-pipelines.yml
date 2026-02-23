@@ -1,0 +1,356 @@
+# Use Case Scoring App - Azure Pipelines (CI/CD for Linux Agents)
+# This pipeline runs on Linux agents and deploys to Azure Container Apps
+
+trigger:
+  branches:
+    include:
+    - main
+    - develop
+    - feature/*
+  paths:
+    include:
+    - backend/**
+    - frontend/**
+    - docker-compose.yml
+    - Dockerfile
+
+pr:
+  branches:
+    include:
+    - main
+    - develop
+
+pool:
+  vmImage: 'ubuntu-latest'  # Linux agent
+
+variables:
+  dockerRegistryServiceConnection: 'UseCase-ACR'
+  imageRepository: 'usecasescoringapp'
+  containerRegistry: '$(REGISTRY_URL)'
+  dockerfileFrontendPath: '$(Build.SourcesDirectory)/frontend/Dockerfile'
+  dockerfileBackendPath: '$(Build.SourcesDirectory)/backend/Dockerfile'
+  tag: '$(Build.BuildId)'
+  vmImageName: 'ubuntu-latest'
+
+stages:
+- stage: Build
+  displayName: Build Stage
+  jobs:
+  - job: Build
+    displayName: Build and Test
+    pool:
+      vmImage: $(vmImageName)
+    
+    steps:
+    - task: UseDotNet@2
+      displayName: 'Install .NET'
+      inputs:
+        version: '6.x'
+        
+    - task: NodeTool@0
+      displayName: 'Install Node.js'
+      inputs:
+        versionSpec: '18.x'
+    
+    - task: Bash@3
+      displayName: 'Install Python dependencies (Backend)'
+      inputs:
+        targetType: 'inline'
+        script: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install pytest pytest-cov
+    
+    - task: Bash@3
+      displayName: 'Lint Backend'
+      inputs:
+        targetType: 'inline'
+        script: |
+          pip install flake8
+          flake8 backend/ --count --select=E9,F63,F7,F82 --show-source --statistics
+    
+    - task: Bash@3
+      displayName: 'Test Backend'
+      inputs:
+        targetType: 'inline'
+        script: |
+          cd backend
+          python -m pytest tests/ -v --cov=. --cov-report=xml --cov-report=term
+      continueOnError: true
+    
+    - task: PublishCodeCoverageResults@1
+      displayName: 'Publish Code Coverage'
+      inputs:
+        codeCoverageTool: Cobertura
+        summaryFileLocation: '$(System.DefaultWorkingDirectory)/backend/coverage.xml'
+      continueOnError: true
+    
+    - task: Bash@3
+      displayName: 'Install Frontend dependencies'
+      inputs:
+        targetType: 'inline'
+        script: |
+          cd frontend
+          npm ci
+    
+    - task: Bash@3
+      displayName: 'Lint Frontend'
+      inputs:
+        targetType: 'inline'
+        script: |
+          cd frontend
+          npm run lint
+      continueOnError: true
+    
+    - task: Bash@3
+      displayName: 'Build Frontend'
+      inputs:
+        targetType: 'inline'
+        script: |
+          cd frontend
+          npm run build
+
+- stage: BuildAndPush
+  displayName: Build and Push Docker Images
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - job: BuildAndPush
+    displayName: Build and Push
+    pool:
+      vmImage: $(vmImageName)
+    
+    steps:
+    - task: Docker@2
+      displayName: Build Backend Image
+      inputs:
+        command: build
+        Dockerfile: '$(dockerfileBackendPath)'
+        repository: '$(imageRepository)/backend'
+        containerRegistry: '$(dockerRegistryServiceConnection)'
+        tags: |
+          $(tag)
+          latest
+    
+    - task: Docker@2
+      displayName: Build Frontend Image
+      inputs:
+        command: build
+        Dockerfile: '$(dockerfileFrontendPath)'
+        repository: '$(imageRepository)/frontend'
+        containerRegistry: '$(dockerRegistryServiceConnection)'
+        tags: |
+          $(tag)
+          latest
+    
+    - task: Docker@2
+      displayName: Push Backend Image
+      inputs:
+        command: push
+        repository: '$(imageRepository)/backend'
+        containerRegistry: '$(dockerRegistryServiceConnection)'
+        tags: |
+          $(tag)
+          latest
+    
+    - task: Docker@2
+      displayName: Push Frontend Image
+      inputs:
+        command: push
+        repository: '$(imageRepository)/frontend'
+        containerRegistry: '$(dockerRegistryServiceConnection)'
+        tags: |
+          $(tag)
+          latest
+
+- stage: DeployDev
+  displayName: Deploy to Dev (ACA)
+  dependsOn: BuildAndPush
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+  jobs:
+  - deployment: DeployDev
+    displayName: Deploy to Dev
+    pool:
+      vmImage: $(vmImageName)
+    environment: 'Development'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+          
+          - task: AzureCLI@2
+            displayName: 'Deploy to Azure Container Apps (Dev)'
+            inputs:
+              azureSubscription: '$(AZURE_SUBSCRIPTION_ID)'
+              scriptType: bash
+              scriptLocation: scriptPath
+              scriptPath: '$(Pipeline.Workspace)/s/deploy-dev-aca.sh'
+              arguments: '--env-file $(Pipeline.Workspace)/s/.env.dev.aca.local --skip-resources'
+              workingDirectory: '$(Pipeline.Workspace)/s'
+            env:
+              SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+
+- stage: DeployStaging
+  displayName: Deploy to Staging (ACA)
+  dependsOn: BuildAndPush
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - deployment: DeployStaging
+    displayName: Deploy to Staging
+    pool:
+      vmImage: $(vmImageName)
+    environment: 'Staging'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+          
+          - task: AzureCLI@2
+            displayName: 'Deploy to Azure Container Apps (Staging)'
+            inputs:
+              azureSubscription: '$(AZURE_SUBSCRIPTION_ID)'
+              scriptType: bash
+              scriptLocation: scriptPath
+              scriptPath: '$(Pipeline.Workspace)/s/deploy-staging-aca.sh'
+              arguments: '--env-file $(Pipeline.Workspace)/s/.env.staging.aca.local --skip-resources'
+              workingDirectory: '$(Pipeline.Workspace)/s'
+            env:
+              SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+
+- stage: DeployProduction
+  displayName: Deploy to Production (ACA)
+  dependsOn: BuildAndPush
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - deployment: DeployProduction
+    displayName: Deploy to Production
+    pool:
+      vmImage: $(vmImageName)
+    environment: 'Production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+          
+          - task: Bash@3
+            displayName: 'Manual Approval Required'
+            inputs:
+              targetType: 'inline'
+              script: |
+                echo "Production deployment requires manual approval"
+                echo "Contact the DevOps team to proceed"
+          
+          - task: AzureCLI@2
+            displayName: 'Deploy to Azure Container Apps (Production)'
+            inputs:
+              azureSubscription: '$(AZURE_SUBSCRIPTION_ID)'
+              scriptType: bash
+              scriptLocation: scriptPath
+              scriptPath: '$(Pipeline.Workspace)/s/deploy-prod-aca.sh'
+              arguments: '--env-file $(Pipeline.Workspace)/s/.env.prod.aca.local --skip-resources'
+              workingDirectory: '$(Pipeline.Workspace)/s'
+            env:
+              SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+
+                docker build -t $(backendImage) ./backend
+                docker push $(backendImage)
+
+                docker build -t $(frontendImage) ./frontend
+                docker push $(frontendImage)
+
+  - stage: Deploy
+    displayName: Deploy to Azure Container Apps
+    dependsOn: Build
+    jobs:
+      - job: Deploy
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - task: AzureCLI@2
+            displayName: 'Provision and Deploy'
+            inputs:
+              azureSubscription: '$(azureServiceConnection)'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                set -e
+
+                # Resource group
+                az group create --name $(resourceGroup) --location $(location)
+
+                # Storage account and file share
+                az storage account create --name $(storageAccount) --resource-group $(resourceGroup) --location $(location) --sku Standard_LRS
+                az storage share create --name $(fileShare) --account-name $(storageAccount)
+
+                # Container Apps environment
+                az containerapp env create --name $(containerAppEnv) --resource-group $(resourceGroup) --location $(location)
+
+                # Get ACR credentials
+                ACR_PASS=$(az acr credential show --name $(acrName) --query passwords[0].value -o tsv)
+
+                # Backend app
+                if az containerapp show --name $(backendAppName) --resource-group $(resourceGroup) > /dev/null 2>&1; then
+                  az containerapp update \
+                    --name $(backendAppName) \
+                    --resource-group $(resourceGroup) \
+                    --image $(backendImage) \
+                    --set-env-vars \
+                      JWT_SECRET=$(JWT_SECRET) \
+                      FLASK_ENV=$(flaskEnv) \
+                      DATABASE_URL=$(databaseUrl)
+                else
+                  az containerapp create \
+                    --name $(backendAppName) \
+                    --resource-group $(resourceGroup) \
+                    --environment $(containerAppEnv) \
+                    --image $(backendImage) \
+                    --ingress external \
+                    --target-port 5000 \
+                    --min-replicas 1 \
+                    --max-replicas 3 \
+                    --cpu 0.5 \
+                    --memory 1Gi \
+                    --environment-variables \
+                      JWT_SECRET=$(JWT_SECRET) \
+                      FLASK_ENV=$(flaskEnv) \
+                      DATABASE_URL=$(databaseUrl) \
+                    --storage-mounts \
+                      volumeName=database \
+                      storageAccountName=$(storageAccount) \
+                      storageName=$(fileShare) \
+                      storageType=AzureFiles \
+                      mountPath=/mnt/appdata \
+                    --registry-username $(acrName) \
+                    --registry-password $ACR_PASS
+                fi
+
+                # Get backend URL
+                BACKEND_URL=$(az containerapp show --name $(backendAppName) --resource-group $(resourceGroup) --query "properties.configuration.ingress.fqdn" -o tsv)
+
+                # Frontend app
+                if az containerapp show --name $(frontendAppName) --resource-group $(resourceGroup) > /dev/null 2>&1; then
+                  az containerapp update \
+                    --name $(frontendAppName) \
+                    --resource-group $(resourceGroup) \
+                    --image $(frontendImage) \
+                    --set-env-vars VITE_API_URL=https://$BACKEND_URL
+                else
+                  az containerapp create \
+                    --name $(frontendAppName) \
+                    --resource-group $(resourceGroup) \
+                    --environment $(containerAppEnv) \
+                    --image $(frontendImage) \
+                    --ingress external \
+                    --target-port 3000 \
+                    --min-replicas 1 \
+                    --max-replicas 3 \
+                    --cpu 0.5 \
+                    --memory 1Gi \
+                    --environment-variables \
+                      VITE_API_URL=https://$BACKEND_URL \
+                    --registry-username $(acrName) \
+                    --registry-password $ACR_PASS
+                fi
