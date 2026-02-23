@@ -45,7 +45,7 @@ print_error() {
 # Load environment file
 load_env_file() {
     local env_file="$1"
-    local sanitized_env
+    local line key value
     
     if [ ! -f "$env_file" ]; then
         print_error "Environment file not found: $env_file"
@@ -53,15 +53,30 @@ load_env_file() {
     
     print_step "Loading environment from $env_file"
 
-    # Normalize CRLF line endings and source env entries, handling comments and quotes
-    sanitized_env="$(mktemp)"
-    grep -v '^#' "$env_file" | grep -v '^$' | sed "s/'//g" | sed 's/"//g' | sed 's/\r$//' > "$sanitized_env"
+    while IFS= read -r line || [ -n "$line" ]; do
+        line="${line%$'\r'}"
 
-    set -a
-    source "$sanitized_env"
-    set +a
+        # Skip empty lines and comments
+        [[ -z "${line// }" ]] && continue
+        [[ "$line" =~ ^[[:space:]]*# ]] && continue
 
-    rm -f "$sanitized_env"
+        # Parse KEY=VALUE only
+        [[ "$line" != *"="* ]] && continue
+
+        key="${line%%=*}"
+        value="${line#*=}"
+
+        # Trim spaces around key/value
+        key="$(echo "$key" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g')"
+        value="$(echo "$value" | sed -E 's/^[[:space:]]+|[[:space:]]+$//g')"
+
+        # Remove matching surrounding quotes only
+        if [[ "$value" =~ ^".*"$ ]] || [[ "$value" =~ ^'.*'$ ]]; then
+            value="${value:1:-1}"
+        fi
+
+        export "$key=$value"
+    done < "$env_file"
     
     print_success "Environment loaded"
 }
