@@ -183,7 +183,7 @@ stages:
     displayName: Deploy to Dev
     pool:
       vmImage: $(vmImageName)
-    environment: 'Development'
+    environment: 'aca-sc-da-apps-dev-pub'
     strategy:
       runOnce:
         deploy:
@@ -217,7 +217,7 @@ stages:
     displayName: Deploy to Testing
     pool:
       vmImage: $(vmImageName)
-    environment: 'Testing'
+    environment: 'aca-sc-da-apps-tst-pub'
     strategy:
       runOnce:
         deploy:
@@ -251,7 +251,7 @@ stages:
     displayName: Deploy to Production
     pool:
       vmImage: $(vmImageName)
-    environment: 'Production'
+    environment: 'aca-sc-da-apps-prd-pub'
     strategy:
       runOnce:
         deploy:
