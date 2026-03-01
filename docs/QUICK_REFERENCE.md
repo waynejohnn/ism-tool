@@ -62,10 +62,23 @@ git push origin develop
 
 ### GitHub Actions
 ```bash
-# Configure workflow from deploy/prd/LINUX_DEPLOYMENT_GUIDE.md
-# Push to develop branch
-git push origin develop
+# Branch flow
+# feature/* -> develop
+# develop -> main
+
+# Deployment triggers by branch
+git push origin deploy/dev   # triggers dev deployment
+git push origin deploy/tst   # triggers test deployment
+git push origin deploy/prd   # triggers production deployment
 ```
+
+Required GitHub Secrets:
+- AZURE_CREDENTIALS_DEV
+- AZURE_CREDENTIALS_TST
+- AZURE_CREDENTIALS_PRD
+- ENV_FILE_DEV
+- ENV_FILE_TST
+- ENV_FILE_PRD
 
 ---
 

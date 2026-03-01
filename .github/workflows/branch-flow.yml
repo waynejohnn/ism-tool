@@ -1,0 +1,43 @@
+name: Branch Flow Policy
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+
+jobs:
+  enforce-flow:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR branch flow
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BASE="${{ github.base_ref }}"
+          HEAD="${{ github.head_ref }}"
+
+          echo "Validating flow: ${HEAD} -> ${BASE}"
+
+          if [[ "$BASE" == "develop" ]]; then
+            if [[ "$HEAD" != feature/* ]]; then
+              echo "❌ PRs to develop must come from feature/* branches."
+              echo "Received: ${HEAD} -> ${BASE}"
+              exit 1
+            fi
+            echo "✅ Valid feature flow to develop"
+            exit 0
+          fi
+
+          if [[ "$BASE" == "main" ]]; then
+            if [[ "$HEAD" != "develop" ]]; then
+              echo "❌ PRs to main must come from develop."
+              echo "Received: ${HEAD} -> ${BASE}"
+              exit 1
+            fi
+            echo "✅ Valid release flow to main"
+            exit 0
+          fi
+
+          echo "✅ No policy rule required for this PR target"

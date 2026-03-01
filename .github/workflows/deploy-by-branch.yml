@@ -1,0 +1,108 @@
+name: Deploy by Branch
+
+on:
+  push:
+    branches:
+      - deploy/dev
+      - deploy/tst
+      - deploy/prd
+
+jobs:
+  deploy-dev:
+    if: github.ref == 'refs/heads/deploy/dev'
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate required secrets (dev)
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ -n "${{ secrets.AZURE_CREDENTIALS_DEV }}" ]] || { echo "Missing AZURE_CREDENTIALS_DEV"; exit 1; }
+          [[ -n "${{ secrets.ENV_FILE_DEV }}" ]] || { echo "Missing ENV_FILE_DEV"; exit 1; }
+
+      - name: Azure Login (dev)
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS_DEV }}
+
+      - name: Write env file (dev)
+        shell: bash
+        run: |
+          cat > .env.dev.aca.local << 'EOF'
+          ${{ secrets.ENV_FILE_DEV }}
+          EOF
+
+      - name: Run dev deployment
+        shell: bash
+        run: |
+          chmod +x ./deploy/dev/deploy-dev-aca.sh
+          ./deploy/dev/deploy-dev-aca.sh --env-file .env.dev.aca.local
+
+  deploy-tst:
+    if: github.ref == 'refs/heads/deploy/tst'
+    runs-on: ubuntu-latest
+    environment: testing
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate required secrets (tst)
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ -n "${{ secrets.AZURE_CREDENTIALS_TST }}" ]] || { echo "Missing AZURE_CREDENTIALS_TST"; exit 1; }
+          [[ -n "${{ secrets.ENV_FILE_TST }}" ]] || { echo "Missing ENV_FILE_TST"; exit 1; }
+
+      - name: Azure Login (tst)
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS_TST }}
+
+      - name: Write env file (tst)
+        shell: bash
+        run: |
+          cat > .env.tst.aca.local << 'EOF'
+          ${{ secrets.ENV_FILE_TST }}
+          EOF
+
+      - name: Run test deployment
+        shell: bash
+        run: |
+          chmod +x ./deploy/tst/deploy-tst-aca.sh
+          ./deploy/tst/deploy-tst-aca.sh --env-file .env.tst.aca.local
+
+  deploy-prd:
+    if: github.ref == 'refs/heads/deploy/prd'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate required secrets (prd)
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ -n "${{ secrets.AZURE_CREDENTIALS_PRD }}" ]] || { echo "Missing AZURE_CREDENTIALS_PRD"; exit 1; }
+          [[ -n "${{ secrets.ENV_FILE_PRD }}" ]] || { echo "Missing ENV_FILE_PRD"; exit 1; }
+
+      - name: Azure Login (prd)
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS_PRD }}
+
+      - name: Write env file (prd)
+        shell: bash
+        run: |
+          cat > .env.prd.aca.local << 'EOF'
+          ${{ secrets.ENV_FILE_PRD }}
+          EOF
+
+      - name: Run production deployment
+        shell: bash
+        run: |
+          chmod +x ./deploy/prd/deploy-prd-aca.sh
+          ./deploy/prd/deploy-prd-aca.sh --env-file .env.prd.aca.local
