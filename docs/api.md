@@ -41,7 +41,7 @@ Authenticate a user and receive a JWT token.
 **Request:**
 ```json
 {
-  "email": "admin@santeecooper.com",
+  "email": "admin@ism.com",
   "password": "admin123"
 }
 ```
@@ -51,7 +51,7 @@ Authenticate a user and receive a JWT token.
 {
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "userId": "user-uuid-here",
-  "email": "admin@santeecooper.com",
+  "email": "admin@ism.com",
   "role": "admin"
 }
 ```
@@ -80,7 +80,7 @@ Verify if current token is valid.
 {
   "valid": true,
   "userId": "user-uuid-here",
-  "email": "admin@santeecooper.com"
+  "email": "admin@ism.com"
 }
 ```
 
@@ -618,7 +618,7 @@ Retrieve all users (admin only).
 [
   {
     "userId": "user-uuid",
-    "email": "admin@santeecooper.com",
+    "email": "admin@ism.com",
     "role": "admin",
     "createdOn": "2026-01-01T00:00:00Z"
   }
@@ -635,7 +635,7 @@ Create a new user (admin only).
 **Request:**
 ```json
 {
-  "email": "newuser@santeecooper.com",
+  "email": "newuser@ism.com",
   "password": "securePassword123",
   "role": "reviewer"
 }
@@ -645,7 +645,7 @@ Create a new user (admin only).
 ```json
 {
   "userId": "new-uuid",
-  "email": "newuser@santeecooper.com",
+  "email": "newuser@ism.com",
   "role": "reviewer"
 }
 ```

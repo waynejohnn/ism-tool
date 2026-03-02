@@ -67,26 +67,44 @@ def seed():
         if not existing_users:
             print("Seeding users...")
             users = [
-                User(user_id=str(uuid.uuid4()), email="admin@santeecooper.com", full_name="System Administrator", password_hash=generate_password_hash("admin123"), role="Admin", is_active=True),
-                User(user_id=str(uuid.uuid4()), email="reviewer@santeecooper.com", full_name="Score Reviewer", password_hash=generate_password_hash("reviewer123"), role="Reviewer", is_active=True),
-                User(user_id=str(uuid.uuid4()), email="readonly@santeecooper.com", full_name="Read Only User", password_hash=generate_password_hash("readonly123"), role="Read Only", is_active=True),
+                User(user_id=str(uuid.uuid4()), email="admin@ism.com", full_name="System Administrator", password_hash=generate_password_hash("admin123"), role="Admin", is_active=True),
+                User(user_id=str(uuid.uuid4()), email="reviewer@ism.com", full_name="Score Reviewer", password_hash=generate_password_hash("reviewer123"), role="Reviewer", is_active=True),
+                User(user_id=str(uuid.uuid4()), email="readonly@ism.com", full_name="Read Only User", password_hash=generate_password_hash("readonly123"), role="Read Only", is_active=True),
             ]
             for user in users:
                 session.add(user)
             session.commit()
             print("Users seeded successfully")
         else:
-            # Ensure all users have password hashes set
+            # Migrate legacy emails and ensure all users have password hashes set
+            target_email_by_local = {
+                "admin": "admin@ism.com",
+                "reviewer": "reviewer@ism.com",
+                "readonly": "readonly@ism.com",
+            }
+
             updated = False
+            existing_emails = {user.email for user in existing_users}
+
+            for user in existing_users:
+                local_part = user.email.split("@", 1)[0].strip().lower() if user.email else ""
+                if local_part in target_email_by_local:
+                    target_email = target_email_by_local[local_part]
+                    if user.email != target_email and target_email not in existing_emails:
+                        existing_emails.discard(user.email)
+                        user.email = target_email
+                        existing_emails.add(target_email)
+                        updated = True
+
             for user in existing_users:
                 if not user.password_hash or user.password_hash == '':
-                    if user.email == "admin@santeecooper.com":
+                    if user.email == "admin@ism.com":
                         user.password_hash = generate_password_hash("admin123")
                         updated = True
-                    elif user.email == "reviewer@santeecooper.com":
+                    elif user.email == "reviewer@ism.com":
                         user.password_hash = generate_password_hash("reviewer123")
                         updated = True
-                    elif user.email == "readonly@santeecooper.com":
+                    elif user.email == "readonly@ism.com":
                         user.password_hash = generate_password_hash("readonly123")
                         updated = True
             

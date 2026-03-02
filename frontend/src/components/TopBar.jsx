@@ -46,10 +46,7 @@ export default function TopBar() {
         </div>
 
         <div className="top-bar__logo">
-          <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true">
-            <rect width="32" height="32" rx="8" fill="#0A5C36"/>
-            <path d="M8 12h16M8 16h16M8 20h16" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
+          <img src="/ism-icon.svg" alt="ISM icon" width="28" height="28" />
         </div>
       </div>
     </div>

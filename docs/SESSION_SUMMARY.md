@@ -253,17 +253,17 @@ docs/
 # Test admin login (should work)
 curl -X POST http://localhost:5001/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@santeecooper.com","password":"admin123"}'
+  -d '{"email":"admin@ism.com","password":"admin123"}'
 
 # Test reviewer login (should now work!)
 curl -X POST http://localhost:5001/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"reviewer@santeecooper.com","password":"reviewer123"}'
+  -d '{"email":"reviewer@ism.com","password":"reviewer123"}'
 
 # Test read-only login (should now work!)
 curl -X POST http://localhost:5001/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"readonly@santeecooper.com","password":"readonly123"}'
+  -d '{"email":"readonly@ism.com","password":"readonly123"}'
 ```
 
 ### Test JSON Error Handling

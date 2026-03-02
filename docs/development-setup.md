@@ -80,7 +80,7 @@ This will:
 #### 4. Login
 Use default credentials:
 ```
-Email: admin@santeecooper.com
+Email: admin@ism.com
 Password: admin123
 ```
 
@@ -359,7 +359,7 @@ curl http://localhost:5001/health
 # Login
 curl -X POST http://localhost:5001/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@santeecooper.com","password":"admin123"}'
+  -d '{"email":"admin@ism.com","password":"admin123"}'
 
 # Get use cases
 curl http://localhost:5001/usecases
@@ -383,7 +383,7 @@ POST http://localhost:5001/auth/login
 Content-Type: application/json
 
 {
-  "email": "admin@santeecooper.com",
+  "email": "admin@ism.com",
   "password": "admin123"
 }
 

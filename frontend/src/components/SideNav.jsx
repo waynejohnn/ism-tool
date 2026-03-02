@@ -20,10 +20,7 @@ export default function SideNav() {
     >
       <div className="side-nav__header">
         <div className="side-nav__logo">
-          <svg width="32" height="32" viewBox="0 0 32 32">
-            <rect width="32" height="32" rx="8" fill="#0A5C36"/>
-            <path d="M8 12h16M8 16h16M8 20h16" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
+          <img src="/ism-icon.svg" alt="ISM icon" width="32" height="32" />
         </div>
       </div>
 

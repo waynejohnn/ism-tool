@@ -73,7 +73,7 @@ export default function Login() {
           color: 'var(--text-500)',
           textAlign: 'center',
         }}>
-          Santee Cooper Use Case Scoring
+          ISM Use Case Scoring
         </p>
 
         {error && (
@@ -106,7 +106,7 @@ export default function Login() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@santeecooper.com"
+              placeholder="admin@ism.com"
               style={{
                 width: '100%',
                 padding: '12px 16px',

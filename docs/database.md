@@ -32,9 +32,9 @@ CREATE TABLE users (
 - `users_email_key` on `email` (unique)
 
 **Default Users (seeded):**
-- Email: `admin@santeecooper.com` / Password: `admin123` (role: admin)
-- Email: `reviewer@santeecooper.com` / Password: `reviewer123` (role: reviewer)
-- Email: `readonly@santeecooper.com` / Password: `readonly123` (role: readonly)
+- Email: `admin@ism.com` / Password: `admin123` (role: admin)
+- Email: `reviewer@ism.com` / Password: `reviewer123` (role: reviewer)
+- Email: `readonly@ism.com` / Password: `readonly123` (role: readonly)
 
 ---
 
@@ -517,7 +517,7 @@ sqlite3 /backend/data/app.db < backup-20260222.sql
 ```python
 User(
     user_id=str(uuid.uuid4()),
-    email="admin@santeecooper.com",
+    email="admin@ism.com",
     password_hash=generate_password_hash("admin123"),
     role="admin"
 )

@@ -203,9 +203,9 @@ class FilterOption(Base):
 The system seeds with:
 
 ### Default Users
-- **admin@santeecooper.com** - System Administrator (Admin role)
-- **reviewer@santeecooper.com** - Score Reviewer (Reviewer role)
-- **readonly@santeecooper.com** - Read Only User (Read Only role)
+- **admin@ism.com** - System Administrator (Admin role)
+- **reviewer@ism.com** - Score Reviewer (Reviewer role)
+- **readonly@ism.com** - Read Only User (Read Only role)
 
 ### Default Filter Options
 - **Target Years:** 2025, 2026, 2027, 2028

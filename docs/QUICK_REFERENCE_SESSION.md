@@ -16,9 +16,9 @@
 **Impact:** Application now usable by all 3 user types
 
 **Default Users (all now work):**
-- 👨‍💼 `admin@santeecooper.com` / `admin123` → Admin role
-- 👤 `reviewer@santeecooper.com` / `reviewer123` → Reviewer role  
-- 👁️ `readonly@santeecooper.com` / `readonly123` → Read-Only role
+- 👨‍💼 `admin@ism.com` / `admin123` → Admin role
+- 👤 `reviewer@ism.com` / `reviewer123` → Reviewer role  
+- 👁️ `readonly@ism.com` / `readonly123` → Read-Only role
 
 ---
 
@@ -76,7 +76,7 @@ docker compose up --build
 # Try all three users - they should all work now!
 curl -X POST http://localhost:5001/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"reviewer@santeecooper.com","password":"reviewer123"}'
+  -d '{"email":"reviewer@ism.com","password":"reviewer123"}'
 ```
 
 ### Access the App

@@ -35,8 +35,8 @@ export default function TopNav({ onAddUseCase }) {
   return (
     <header className="app-header" style={{ justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <img src="/favicon.ico" alt="logo" style={{ width: 36, height: 36, borderRadius: 8 }} />
-        <div style={{ fontWeight: 700 }}>Use Case Scoring</div>
+        <img src="/ism-logo.svg" alt="ISM logo" style={{ height: 28 }} />
+        <div style={{ fontWeight: 700 }}>ISM Use Case Scoring</div>
       </div>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <input placeholder="Search use cases..." style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid #e7e7e7' }} />
