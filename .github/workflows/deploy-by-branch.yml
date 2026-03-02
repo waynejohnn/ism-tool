@@ -20,26 +20,29 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          [[ -n "${{ secrets.AZURE_CREDENTIALS_DEV }}" ]] || { echo "Missing AZURE_CREDENTIALS_DEV"; exit 1; }
+          [[ -n "${{ secrets.GCP_CREDENTIALS_DEV }}" ]] || { echo "Missing GCP_CREDENTIALS_DEV"; exit 1; }
           [[ -n "${{ secrets.ENV_FILE_DEV }}" ]] || { echo "Missing ENV_FILE_DEV"; exit 1; }
 
-      - name: Azure Login (dev)
-        uses: azure/login@v2
+      - name: Authenticate to GCP (dev)
+        uses: google-github-actions/auth@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS_DEV }}
+          credentials_json: ${{ secrets.GCP_CREDENTIALS_DEV }}
+
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
 
       - name: Write env file (dev)
         shell: bash
         run: |
-          cat > .env.dev.aca.local << 'EOF'
+          cat > .env.dev.gcp.local << 'EOF'
           ${{ secrets.ENV_FILE_DEV }}
           EOF
 
       - name: Run dev deployment
         shell: bash
         run: |
-          chmod +x ./deploy/dev/deploy-dev-aca.sh
-          ./deploy/dev/deploy-dev-aca.sh --env-file .env.dev.aca.local
+          chmod +x ./deploy/dev/deploy-dev-cloudrun.sh
+          ./deploy/dev/deploy-dev-cloudrun.sh --env-file .env.dev.gcp.local
 
   deploy-tst:
     if: github.ref == 'refs/heads/deploy/tst'
@@ -53,26 +56,29 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          [[ -n "${{ secrets.AZURE_CREDENTIALS_TST }}" ]] || { echo "Missing AZURE_CREDENTIALS_TST"; exit 1; }
+          [[ -n "${{ secrets.GCP_CREDENTIALS_TST }}" ]] || { echo "Missing GCP_CREDENTIALS_TST"; exit 1; }
           [[ -n "${{ secrets.ENV_FILE_TST }}" ]] || { echo "Missing ENV_FILE_TST"; exit 1; }
 
-      - name: Azure Login (tst)
-        uses: azure/login@v2
+      - name: Authenticate to GCP (tst)
+        uses: google-github-actions/auth@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS_TST }}
+          credentials_json: ${{ secrets.GCP_CREDENTIALS_TST }}
+
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
 
       - name: Write env file (tst)
         shell: bash
         run: |
-          cat > .env.tst.aca.local << 'EOF'
+          cat > .env.tst.gcp.local << 'EOF'
           ${{ secrets.ENV_FILE_TST }}
           EOF
 
       - name: Run test deployment
         shell: bash
         run: |
-          chmod +x ./deploy/tst/deploy-tst-aca.sh
-          ./deploy/tst/deploy-tst-aca.sh --env-file .env.tst.aca.local
+          chmod +x ./deploy/tst/deploy-tst-cloudrun.sh
+          ./deploy/tst/deploy-tst-cloudrun.sh --env-file .env.tst.gcp.local
 
   deploy-prd:
     if: github.ref == 'refs/heads/deploy/prd'
@@ -86,23 +92,26 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          [[ -n "${{ secrets.AZURE_CREDENTIALS_PRD }}" ]] || { echo "Missing AZURE_CREDENTIALS_PRD"; exit 1; }
+          [[ -n "${{ secrets.GCP_CREDENTIALS_PRD }}" ]] || { echo "Missing GCP_CREDENTIALS_PRD"; exit 1; }
           [[ -n "${{ secrets.ENV_FILE_PRD }}" ]] || { echo "Missing ENV_FILE_PRD"; exit 1; }
 
-      - name: Azure Login (prd)
-        uses: azure/login@v2
+      - name: Authenticate to GCP (prd)
+        uses: google-github-actions/auth@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS_PRD }}
+          credentials_json: ${{ secrets.GCP_CREDENTIALS_PRD }}
+
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
 
       - name: Write env file (prd)
         shell: bash
         run: |
-          cat > .env.prd.aca.local << 'EOF'
+          cat > .env.prd.gcp.local << 'EOF'
           ${{ secrets.ENV_FILE_PRD }}
           EOF
 
       - name: Run production deployment
         shell: bash
         run: |
-          chmod +x ./deploy/prd/deploy-prd-aca.sh
-          ./deploy/prd/deploy-prd-aca.sh --env-file .env.prd.aca.local
+          chmod +x ./deploy/prd/deploy-prd-cloudrun.sh
+          ./deploy/prd/deploy-prd-cloudrun.sh --env-file .env.prd.gcp.local

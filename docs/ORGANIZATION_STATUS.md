@@ -120,8 +120,8 @@ node test/test-dimension-calc.js
 3. Follow `docs/DOCUMENTATION_STANDARDS.md` when adding new docs
 
 ### For CI/CD Pipelines
-1. Update Azure Pipelines references if needed
-2. Update GitHub Actions to use new script paths: `./deploy/dev/deploy-dev-aca.ps1`
+1. Keep GitHub Actions workflows up to date in `.github/workflows/`
+2. Use Cloud Run deployment scripts: `./deploy/dev/deploy-dev-cloudrun.sh`
 3. Test deployment pipeline with new structure
 
 ### For Team
@@ -135,8 +135,7 @@ node test/test-dimension-calc.js
 
 | Task | Old Way | New Way |
 |------|---------|---------|
-| Run dev deploy (PowerShell) | `.\deploy-dev-aca.ps1` | `./deploy/dev/deploy-dev-aca.ps1` |
-| Run dev deploy (Bash) | `./deploy-dev-aca.sh` | `./deploy/dev/deploy-dev-aca.sh` |
+| Run dev deploy (Bash) | `./deploy-dev-cloudrun.sh` | `./deploy/dev/deploy-dev-cloudrun.sh` |
 | Docker Compose dev | `docker-compose up` | `docker-compose -f ./deploy/dev/docker-compose.yml up` |
 | Run tests | `python test-dimension-calc.py` | `python test/test-dimension-calc.py` |
 | Find deployment docs | In root directory | In `deploy/prd/` folder |

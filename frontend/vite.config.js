@@ -6,11 +6,11 @@ export default defineConfig({
   server: {
     host: true,
     port: 3000,
-    allowedHosts: ['.azurecontainerapps.io', 'localhost', '127.0.0.1']
+    allowedHosts: ['.run.app', 'localhost', '127.0.0.1']
   },
   preview: {
     host: true,
     port: 3000,
-    allowedHosts: ['.azurecontainerapps.io', 'localhost', '127.0.0.1']
+    allowedHosts: ['.run.app', 'localhost', '127.0.0.1']
   }
 });

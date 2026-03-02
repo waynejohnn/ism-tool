@@ -34,23 +34,21 @@ Use Case Scoring App/
 │
 ├── deploy/                             # All deployment-related files
 │   ├── README.md                       # Deployment folder guide
+│   ├── gcp/                            # Shared Cloud Run deployment logic
+│   │   └── deploy-cloudrun.sh          # Shared Bash deployment script
 │   ├── dev/                            # Development environment
-│   │   ├── deploy-dev-aca.ps1          # PowerShell deployment script
-│   │   ├── deploy-dev-aca.sh           # Bash deployment script
+│   │   ├── deploy-dev-cloudrun.sh      # Development deployment wrapper
 │   │   ├── docker-compose.yml          # Dev Docker Compose config
-│   │   ├── azure-pipelines.yml         # CI/CD pipeline configuration
 │   │   └── tmp_payload.json            # Test API payload
 │   │
-│   ├── tst/                            # Testing environment (reserved)
+│   ├── tst/                            # Testing environment
+│   │   └── deploy-tst-cloudrun.sh      # Testing deployment wrapper
 │   │
 │   └── prd/                            # Production environment
-│       ├── deploy-aca.ps1              # Production deployment script
+│       ├── deploy-prd-cloudrun.sh      # Production deployment wrapper
 │       ├── docker-compose.prod.yml     # Prod Docker Compose config
-│       ├── ACA_DEV_DEPLOYMENT.md       # Dev guide (Windows/PowerShell)
-│       ├── LINUX_DEPLOYMENT_GUIDE.md   # Dev guide (Linux/Bash)
-│       ├── ACA_DEPLOYMENT_CHECKLIST.md # Deployment verification
-│       ├── ACA_VARIABLES_REFERENCE.md  # Environment variables
-│       └── ... (other deployment docs)
+│       ├── PRODUCTION_DEPLOYMENT.md    # Production deployment guide
+│       └── PRODUCTION_READY.md         # Production readiness checklist
 │
 ├── test/                               # Test and validation scripts
 │   ├── README.md                       # Test folder guide
@@ -88,7 +86,7 @@ Use Case Scoring App/
 │   └── workflows/                      # GitHub Actions workflows
 │
 ├── .dockerignore
-├── .env.dev.aca                        # Dev environment template
+├── .env.dev.gcp                        # Dev environment template
 ├── .env.production                     # Production environment template
 │
 └── README.md                           # Project root README
@@ -100,11 +98,8 @@ Use Case Scoring App/
 
 **From Project Root:**
 ```bash
-# PowerShell
-./deploy/dev/deploy-dev-aca.ps1 -EnvFile .env.dev.aca.local
-
 # Bash
-./deploy/dev/deploy-dev-aca.sh --env-file .env.dev.aca.local
+./deploy/dev/deploy-dev-cloudrun.sh --env-file .env.dev.gcp.local
 
 # Docker Compose
 docker-compose -f ./deploy/dev/docker-compose.yml up --build
@@ -112,11 +107,8 @@ docker-compose -f ./deploy/dev/docker-compose.yml up --build
 
 **From deploy/dev/ directory:**
 ```bash
-# PowerShell
-./deploy-dev-aca.ps1 -EnvFile ../../.env.dev.aca.local
-
 # Bash
-./deploy-dev-aca.sh --env-file ../../.env.dev.aca.local
+./deploy-dev-cloudrun.sh --env-file ../../.env.dev.gcp.local
 ```
 
 ### When Writing Documentation
@@ -128,7 +120,7 @@ See [Development Setup](development-setup.md)
 
 **Link to resources in deploy/prd/ from docs/:**
 ```markdown
-See [Deployment Checklist](../deploy/prd/ACA_DEPLOYMENT_CHECKLIST.md)
+See [Production Deployment](../deploy/prd/PRODUCTION_DEPLOYMENT.md)
 ```
 
 **Link to API documentation:**
@@ -145,13 +137,13 @@ Run tests with [test scripts](../test/README.md)
 
 **Location:** Project root  
 **Files:**
-- `.env.dev.aca` - Development environment template (version controlled)
+- `.env.dev.gcp` - Development environment template (version controlled)
 - `.env.production` - Production environment template (version controlled)
-- `.env.dev.aca.local` - Development configuration (local, NOT in version control)
+- `.env.dev.gcp.local` - Development configuration (local, NOT in version control)
 
 **Scripts reference these with relative paths:**
-- From project root: `.env.dev.aca.local`
-- From deploy/dev/: `../../.env.dev.aca.local`
+- From project root: `.env.dev.gcp.local`
+- From deploy/dev/: `../../.env.dev.gcp.local`
 
 ## Docker Compose Files
 
@@ -165,7 +157,7 @@ Run tests with [test scripts](../test/README.md)
 ## Deployment Scripts
 
 All deployment scripts are in `deploy/dev/` and read from:
-- `.env.dev.aca.local` - Development environment configuration
+- `.env.dev.gcp.local` - Development environment configuration
 
 Scripts reference application code using relative paths:
 - `../../backend` - Backend application
@@ -178,7 +170,7 @@ Scripts reference application code using relative paths:
 **Persistence:** 
 - Local: stored in `backend/data/` volume
 - Docker: persists via named volume
-- Production: Azure Storage Account
+- Production: managed external datastore recommended
 
 **Seeding:**
 ```bash
@@ -199,11 +191,6 @@ python backend/seed.py
 - **DOCUMENTATION_STANDARDS.md** - How to write docs
 
 ### Deployment Documentation (in `deploy/prd/`)
-- **ACA_DEPLOYMENT_CHECKLIST.md** - Pre/post deployment checks
-- **ACA_DEPLOYMENT_PACKAGE.md** - Deployment package overview
-- **ACA_VARIABLES_REFERENCE.md** - All environment variables
-- **ACA_DEV_DEPLOYMENT.md** - Windows/PowerShell deployment guide
-- **LINUX_DEPLOYMENT_GUIDE.md** - Linux/Bash deployment guide
 - **PRODUCTION_DEPLOYMENT.md** - Production deployment notes
 - **PRODUCTION_READY.md** - Production readiness criteria
 

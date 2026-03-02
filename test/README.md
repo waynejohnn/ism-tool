@@ -73,9 +73,8 @@ Tests print validation results showing:
 
 These tests can be integrated into deployment pipelines:
 
-1. **Azure Pipelines** - See `deploy/dev/azure-pipelines.yml`
-2. **GitHub Actions** - Can be triggered on pull requests
-3. **Local testing** - Before committing changes
+1. **GitHub Actions** - Trigger on pull requests and branch pushes
+2. **Local testing** - Before committing changes
 
 ## Extending Tests
 

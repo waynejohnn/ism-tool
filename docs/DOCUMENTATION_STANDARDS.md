@@ -30,9 +30,9 @@ docs/
 │
 └── Deployment guides
     ├── PRODUCTION_DEPLOYMENT.md    # Production deployment guide
-    ├── AZURE_DEPLOYMENT.md         # Azure Container Apps deployment
-    ├── ACA_*.md                    # Azure Container Apps specific docs
-    ├── LINUX_*.md                  # Linux deployment guides
+  ├── CLOUD_RUN_SETUP.md          # Cloud Run setup and deployment
+  ├── GITHUB_ACTIONS_CICD.md      # CI/CD workflow guide
+  ├── LINUX_*.md                  # Linux deployment guides
     └── etc.
 ```
 
@@ -53,8 +53,8 @@ docs/
 
 ### Deployment Documentation
 - **PRODUCTION_DEPLOYMENT.md** - Production readiness and deployment
-- **AZURE_DEPLOYMENT.md** - Azure Container Apps deployment
-- deployment-specific guides (ACA, Linux, etc.)
+- **CLOUD_RUN_SETUP.md** - Cloud Run deployment
+- deployment-specific guides (Cloud Run, Linux, etc.)
 
 ### Architecture Decisions (ADR)
 - Store in `docs/adr/` folder
@@ -80,8 +80,8 @@ scoring.md
 ### Deployment Guides (UPPERCASE with underscores, for visibility)
 ```
 PRODUCTION_DEPLOYMENT.md
-AZURE_DEPLOYMENT.md
-LINUX_DEPLOYMENT_GUIDE.md
+CLOUD_RUN_SETUP.md
+GITHUB_ACTIONS_CICD.md
 ```
 
 ### ADR (Numbered)

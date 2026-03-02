@@ -513,7 +513,7 @@ npm run format
 3. **Review API Documentation** to understand endpoints
 4. **Explore the codebase** in VS Code
 5. **Make your first change** and see it rebuild automatically
-6. **Consult deployment guides** when ready to deploy to Azure
+6. **Consult deployment guides** when ready to deploy to Cloud Run
 
 ---
 
@@ -522,7 +522,7 @@ npm run format
 - [API Documentation](api.md) - Complete endpoint reference
 - [Database Schema](database.md) - Data structure overview
 - [Architecture](architecture.md) - System design and data flow
-- [Production Deployment](../PRODUCTION_DEPLOYMENT.md) - Azure deployment guide
+- [Production Deployment](../deploy/prd/PRODUCTION_DEPLOYMENT.md) - Cloud Run deployment guide
 - [Security Best Practices](security.md) - Security guidelines
 
 ---

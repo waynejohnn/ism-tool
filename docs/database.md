@@ -462,7 +462,7 @@ if 'strategic_details' not in cols:
 
 ### Data Persistence
 - **Development**: `/backend/data/app.db` (local SQLite file)
-- **Production**: `/mnt/appdata/app.db` (Azure Files mount)
+- **Production**: `/app/data/app.db` (Cloud Run container filesystem; prefer external managed DB for long-lived data)
 
 ---
 
@@ -482,10 +482,6 @@ sqlite3 /backend/data/app.db ".mode csv" \
 ```bash
 # Restore from SQL dump
 sqlite3 /backend/data/app.db < backup-20260222.sql
-
-# Azure Files: Automatic point-in-time recovery available
-az storage file restore --account-name <storage> \
-  --share-name appdata --path app.db --backup-date 2026-02-22
 ```
 
 ---

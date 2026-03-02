@@ -5,7 +5,7 @@ The Use Case Scoring App backend provides RESTful API endpoints for intake, revi
 
 ### Base URL
 - **Development**: `http://localhost:5001`
-- **Production**: `https://backend.azurecontainerapps.io` (example)
+- **Production**: `https://backend-service-xxxxx-uc.a.run.app` (example)
 
 ### Authentication
 - Most endpoints require a JWT token via `token` query parameter
